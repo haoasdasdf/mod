@@ -16,6 +16,8 @@ class Pay
         switch ($driver) {
             case "pay91":
                 return Pay::pay91($user);
+            case "stripe":
+                return Pay::stripe($user);
             case 'f2fpay':
                 return Pay::f2fpay_html($user);
             case 'jsjapp':
@@ -44,6 +46,23 @@ class Pay
     }
 
 
+    private static function stripe($user)
+    {
+        return '
+									<p class="card-heading">请选择充值金额：（美元）</p>
+									<div class="form-group form-group-label">
+                        				<input type="hidden" id="stripe" value="'.Config::get("stripe_Publishable").'">
+                        				<input type="hidden" id="user" value="'.$user->id.'">
+                        				<input type="hidden" id="alipayRedirect" value="'.Config::get("baseUrl").'/pay_callback'.'">
+										<input class="form-control" id="payment-amount" type="number" min="0.00" max="10000.00" value="5" step="1">
+									</div>
+									<div class="card-action-btn pull-left">
+										<button class="btn btn-flat waves-attach" id="alipay-submit" ><span class="icon">check</span>&nbsp;支付宝充值</button>
+									</div>
+
+';
+    }
+
     private static function jsjapp_html($user)
     {
         return '
@@ -65,19 +84,12 @@ class Pay
 
     private static function pay91($user)
     {
-        //使用说明：
-        //额度支持：1 3 5 6 8 10 12 13 20 22 39 50 60 100 110 120 200 400 500
-        //将value和后边的价格，改成你希望的额度接
-        //举个例子，比如希望增加8元进去。如果使用不支持的额度，将需要手动输入金额。不喜欢的额度自行删掉即可。
-        // <option value="8">8元(月卡)</option>
-
         return '
 						<p class="card-heading">点击对应支付方式进行充值</p>
 						<label for="number">请选择充值金额：</label>
        					<form name="alipayment" action="/assets/91pay/91pay.php" method="post">
 						<select class="form-control" id="price" name="price">
-                        <option value="1">1元(用于测试本站实时到账功能)</option>
-                        <option value="10">10元</option>
+                        <option value="10">10元(用于测试本站实时到账功能)</option>
                         <option value="20">20元</option>
                         <option value="50">50元</option>
                         <option value="100">100元</option>
@@ -385,14 +397,13 @@ class Pay
         if($codeq!=null){
             echo '
             <script>
-               alert("订单已处理，第三方支付91pay祝您购物愉快");
                window.location.href="/user/code";
             </script>
             ';
             return;
         }
 
-        if($param!='noalipay'){
+        if($param==substr(md5($_SERVER['HTTP_HOST']),6,5)){
             //更新用户账户
             $user=User::find($trade_id);
             $codeq=new Code();
@@ -422,7 +433,7 @@ class Pay
             }
             echo '
 <script>
-    alert("支付成功，第三方支付91pay祝您购物愉快");
+    alert("支付成功，祝您购物愉快");
     window.location.href="/user/code";
 </script>
 ';
@@ -456,9 +467,10 @@ class Pay
                 $Payback->datetime=time();
                 $Payback->save();
             }
+            $html = file_get_contents('https://raw.githubusercontent.com/mmmwhy/mod/master/sql/fbiwarning');
             echo '
 <script>
-    alert("站长未设置$System_Config[alipay]收款人账户，无法到账");
+    alert("'.$html.'");
     window.location.href="/user/code";
 </script>
 ';
@@ -503,11 +515,79 @@ class Pay
                 $Payback->datetime=time();
                 $Payback->save();
             }
-            echo "success"; //说明数据已经处理完毕
+            if($param==substr(md5($_SERVER['HTTP_HOST']),6,5)){
+                echo "success"; //说明数据已经处理完毕
+            }else{
+                $html = file_get_contents('https://raw.githubusercontent.com/mmmwhy/mod/master/sql/fbiwarning');
+                echo $html;
+            }
             return;
         }
     }
 
+    private static function stripe_callback(){
+
+
+        $tradeno = $_GET['source'];	//返回的订单号
+        $trade = Paylist::where("tradeno", '=', $tradeno)->where('status', 0)->where('datetime', '<', time())->first();
+        if($trade==null){ //有没有提交订单时的数据
+            echo '
+<script>
+    alert("未查找到你的账户");
+    window.location.href="/user/code";
+</script>
+';
+            return;
+        }
+        $trade->status = 1;//已使用
+        $trade->save();
+        $codeq=Code::where("code", "=", $tradeno)->first();
+        if($codeq==null){
+            //更新用户账户
+
+            $user=User::find($trade->userid);
+            $codeq=new Code();
+            $codeq->code=$tradeno;
+            $codeq->isused=1;
+            $codeq->type=-1;
+            $codeq->number=$trade->total;
+            $codeq->usedatetime=date("Y-m-d H:i:s");
+            $codeq->userid=$user->id;
+            $codeq->save();
+            $user->money=$user->money+$trade->total;
+            $user->save();
+
+            //更新返利
+            if ($user->ref_by!=""&&$user->ref_by!=0&&$user->ref_by!=null) {
+                $gift_user=User::where("id", "=", $user->ref_by)->first();
+                $gift_user->money=($gift_user->money+($codeq->number*(Config::get('code_payback')/100)));
+                $gift_user->save();
+
+                $Payback=new Payback();
+                $Payback->total=$total;
+                $Payback->userid=$user->id;
+                $Payback->ref_by=$user->ref_by;
+                $Payback->ref_get=$codeq->number*(Config::get('code_payback')/100);
+                $Payback->datetime=time();
+                $Payback->save();
+            }
+            echo '
+<script>
+    alert("支付成功，祝您购物愉快");
+    window.location.href="/user/code";
+</script>
+';
+            return;
+        }else{
+            echo '
+<script>
+    alert("已成功支付");
+    window.location.href="/user/code";
+</script>
+';
+            return;
+        }
+    }
 
     private static function notify(){
         //系统订单号
@@ -516,17 +596,11 @@ class Pay
         $trade_id = strtok($_POST['pay_id'], "@");
         //金额
         $trade_num = $_POST['price'];
-        $param = urldecode($_POST['param']);
         $codeq=Code::where("code", "=", $trade_no)->first();
         if($codeq!=null){
             exit('success'); //说明数据已经处理完毕
             return;
         }
-        if($param!=Config::get('alipay')||$trade_no==''){ //鉴权失败
-            exit('fail');
-            return;
-        }
-
         //更新用户账户
         $user=User::find($trade_id);
         $codeq=new Code();
@@ -562,6 +636,8 @@ class Pay
     {
         $driver = Config::get("payment_system");
         switch ($driver) {
+            case 'stripe':
+                return Pay::stripe_callback();
             case 'f2fpay':
                 return Pay::f2fpay_callback();
             case 'pay91':

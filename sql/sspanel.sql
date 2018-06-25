@@ -195,15 +195,6 @@ CREATE TABLE IF NOT EXISTS `link` (
   `method` text
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
---
--- 转存表中的数据 `link`
---
-
-INSERT INTO `link` (`id`, `type`, `address`, `port`, `token`, `ios`, `userid`, `isp`, `geo`, `method`) VALUES
-(1, -1, 'smart', 0, 'uqLssejxwrnwpMj7', 1, 1, NULL, 0, 'smart'),
-(2, 9, 'smart', 0, '7d7VqbO3kDPeXyOq', 0, 1, NULL, 0, 'smart'),
-(3, 10, '', 0, 'SLXNV6TKViEvIkV7', 0, 1, NULL, 0, ''),
-(4, 10, '', 0, 'tyMNIMkJiSZCRwbz', 0, 1, NULL, 1, '');
 
 -- --------------------------------------------------------
 
@@ -218,13 +209,6 @@ CREATE TABLE IF NOT EXISTS `login_ip` (
   `datetime` bigint(20) NOT NULL,
   `type` int(11) NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-
---
--- 转存表中的数据 `login_ip`
---
-
-INSERT INTO `login_ip` (`id`, `userid`, `ip`, `datetime`, `type`) VALUES
-(1, 1, '211.86.158.21', 1495801576, 0);
 
 -- --------------------------------------------------------
 
@@ -298,6 +282,15 @@ CREATE TABLE IF NOT EXISTS `shop` (
   `auto_reset_bandwidth` int(11) NOT NULL DEFAULT '0',
   `status` int(11) NOT NULL DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+--
+-- 转存表中的数据 `shop`
+--
+
+INSERT INTO `shop` (`id`, `name`, `price`, `content`, `auto_renew`, `auto_reset_bandwidth`, `status`) VALUES
+  (1, '月付大流量包', '50.00', '{"bandwidth":"1000","expire":"30","class":"3","class_expire":"30"}', 30, 0, 1);
+
 
 -- --------------------------------------------------------
 
@@ -524,7 +517,7 @@ CREATE TABLE IF NOT EXISTS `user` (
 --
 
 INSERT INTO `user` (`id`, `user_name`, `email`, `pass`, `passwd`, `t`, `u`, `d`, `plan`, `transfer_enable`, `port`, `switch`, `enable`, `type`, `last_get_gift_time`, `last_check_in_time`, `last_rest_pass_time`, `reg_date`, `invite_num`, `money`, `ref_by`, `expire_time`, `method`, `is_email_verify`, `reg_ip`, `node_speedlimit`, `node_connector`, `is_admin`, `im_type`, `im_value`, `last_day_t`, `sendDailyMail`, `class`, `class_expire`, `expire_in`, `theme`, `ga_token`, `ga_enable`, `pac`, `remark`, `node_group`, `auto_reset_day`, `auto_reset_bandwidth`, `protocol`, `protocol_param`, `obfs`, `obfs_param`, `forbidden_ip`, `forbidden_port`, `disconnect_ip`, `is_hide`, `is_multi_user`, `telegram_id`) VALUES
-(2, 'admin', '91vps', '572b4a99cb8ba30268882e356832e1b13e4ccf3de191718b6aa2ebcc631d9cf6', 'nHHpgf', 0, 0, 0, 'A', 107374182400, 1025, 1, 1, 1, 0, 0, 0, '2017-05-26 20:04:42', 0, '0.00', 0, 0, 'aes-256-cfb', 0, '127.0.0.1', '0.00', 0, 1, 1, '', 0, 1, 0, '1989-06-04 00:05:00', '2291-03-10 20:04:42', 'material', '2TFGSYHQ3FJLZSWX', 0, NULL, NULL, 0, 0, '0.00', 'origin', NULL, 'plain', NULL, NULL, NULL, NULL, 0, 0, NULL);
+(2, 'admin', '91vps', '572b4a99cb8ba30268882e356832e1b13e4ccf3de191718b6aa2ebcc631d9cf6', 'nHHpgf', 0, 0, 0, 'A', 107374182400, 1025, 1, 1, 1, 0, 0, 0, '2017-05-26 20:04:42', 0, '0.00', 0, 0, 'aes-256-cfb', 0, '127.0.0.1', '0.00', 0, 1, 1, '', 0, 1, 0, '1989-06-04 00:05:00', '2291-03-10 20:04:42', 'cute', '2TFGSYHQ3FJLZSWX', 0, NULL, NULL, 0, 0, '0.00', 'origin', NULL, 'plain', NULL, NULL, NULL, NULL, 0, 0, NULL);
 
 -- --------------------------------------------------------
 
